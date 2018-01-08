@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.tuacy.layoutmanagerdemo.R;
 
@@ -28,7 +29,7 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.ItemViewHold
 
 	@Override
 	public void onBindViewHolder(ItemViewHolder holder, int position) {
-
+		holder.mTextItem.setText(mDataList.get(position));
 	}
 
 	@Override
@@ -38,8 +39,11 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.ItemViewHold
 
 	static class ItemViewHolder extends RecyclerView.ViewHolder {
 
+		TextView mTextItem;
+
 		ItemViewHolder(View itemView) {
 			super(itemView);
+			mTextItem = itemView.findViewById(R.id.text_content_item);
 		}
 	}
 
