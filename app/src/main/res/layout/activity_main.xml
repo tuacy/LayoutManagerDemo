@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="8dp"
     android:orientation="vertical">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler_list"
+    <Button
+        android:id="@+id/button_card_layout_manager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content"
+        android:text="CardLayoutManager"
+        android:textAllCaps="false"/>
 
-</FrameLayout>
+    <Button
+        android:id="@+id/button_table_layout_manager"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TableLayoutManager"
+        android:textAllCaps="false"/>
+
+</LinearLayout>

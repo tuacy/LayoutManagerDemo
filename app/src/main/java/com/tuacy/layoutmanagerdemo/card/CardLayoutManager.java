@@ -1,4 +1,4 @@
-package com.tuacy.layoutmanagerdemo;
+package com.tuacy.layoutmanagerdemo.card;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
@@ -9,14 +9,18 @@ import android.view.ViewGroup;
  */
 public class CardLayoutManager extends RecyclerView.LayoutManager {
 
-	private int mShowViewMax;
+	private float mSectionScale;
+	private float mSectionTranslation;
+	private int   mShowViewMax;
 
 	public CardLayoutManager() {
-		this(10);
+		this(5, 0.075f, 10f);
 	}
 
-	public CardLayoutManager(int showViewMax) {
+	public CardLayoutManager(int showViewMax, float sectionScale, float sectionTranslation) {
 		mShowViewMax = showViewMax;
+		mSectionScale = sectionScale;
+		mSectionTranslation = sectionTranslation;
 	}
 
 	@Override
@@ -41,15 +45,14 @@ public class CardLayoutManager extends RecyclerView.LayoutManager {
 		for (int position = viewCount - 1; position >= 0; position--) {
 			// 获取到制定位置的view
 			final View view = recycler.getViewForPosition(position);
+			addView(view);
 			// 测量view
 			measureChildWithMargins(view, 0, 0);
 			// view在RecyclerView里面还剩余的宽度
 			int widthSpace = getWidth() - getDecoratedMeasuredWidth(view);
-			// view在RecyclerView里面还剩余的高度
-			int heightSpace = getHeight() - getDecoratedMeasuredHeight(view);
-			// layout view,先放到中心的位置，我们下面做便宜
-			layoutDecoratedWithMargins(view, widthSpace / 2, heightSpace / 2, widthSpace / 2 + getDecoratedMeasuredWidth(view),
-									   heightSpace / 2 + getDecoratedMeasuredHeight(view));
+			// layout view,水平居中
+			layoutDecoratedWithMargins(view, widthSpace / 2, 0, widthSpace / 2 + getDecoratedMeasuredWidth(view),
+									   getDecoratedMeasuredHeight(view));
 			// 为了让重叠在一起的view，有一个更好的显示效果
 			view.setScaleX(getScaleX(position));
 			view.setScaleY(getScaleY(position));
@@ -57,11 +60,10 @@ public class CardLayoutManager extends RecyclerView.LayoutManager {
 			view.setTranslationY(getTranslationY(position));
 		}
 
-
 	}
 
 	private float getScaleX(int position) {
-		return 1f;
+		return 1f - position * mSectionScale;
 	}
 
 	private float getScaleY(int position) {
@@ -73,6 +75,6 @@ public class CardLayoutManager extends RecyclerView.LayoutManager {
 	}
 
 	private float getTranslationY(int position) {
-		return 0f;
+		return position * mSectionTranslation;
 	}
 }

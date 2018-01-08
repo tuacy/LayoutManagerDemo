@@ -16,6 +16,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".card.CardActivity"
+            android:label="CardLayoutManager" />
+
+        <activity
+            android:name=".table.TableActivity"
+            android:label="TableLayoutManager" />
     </application>
 
 </manifest>
