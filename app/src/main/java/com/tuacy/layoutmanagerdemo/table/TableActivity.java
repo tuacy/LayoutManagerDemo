@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 
 import com.tuacy.layoutmanagerdemo.R;
+import com.tuacy.layoutmanagerdemo.utils.DensityUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +33,14 @@ public class TableActivity extends AppCompatActivity {
 
 	private void initView() {
 		mRecyclerView = findViewById(R.id.recycler_table);
-		TableLayoutManager layoutManager = new TableLayoutManager(10);
+		TableLayoutManager layoutManager = new TableLayoutManager.Build(mContext).setColumnCount(10)
+																				 .setFixColumnCount(1)
+																				 .setFixHeader(true)
+																				 .setTableHeadHeight(DensityUtils.dp2px(mContext, 32))
+																				 .setTableRowHeight(DensityUtils.dp2px(mContext, 48))
+																				 .build();
 		mRecyclerView.setLayoutManager(layoutManager);
+		mRecyclerView.addItemDecoration(new TableItemDecoration());
 	}
 
 	private void initEvent() {
@@ -47,7 +54,7 @@ public class TableActivity extends AppCompatActivity {
 
 	private List<String> obtainDataList() {
 		List<String> dataList = new ArrayList<>();
-		for (int index = 1; index < 1000; index++) {
+		for (int index = 0; index < 1000; index++) {
 			dataList.add(index + "");
 		}
 		return dataList;
