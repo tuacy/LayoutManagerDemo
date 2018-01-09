@@ -1,11 +1,9 @@
 package com.tuacy.layoutmanagerdemo.table;
 
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.SparseArray;
-import android.util.SparseBooleanArray;
+import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -15,38 +13,25 @@ import android.view.ViewGroup;
  */
 public class TableLayoutManager extends RecyclerView.LayoutManager {
 
+	private static final boolean DEBUG = true;
+	private static final String  TAG   = "TableLayoutManager";
+
 	/**
 	 * 列的总数
 	 */
-	private int                mColumnCount;
+	private int         mColumnCount;
 	/**
 	 * 是否有表头
 	 */
-	private boolean            mIsHasTableHeader;
+	private boolean     mIsHasTableHeader;
 	/**
 	 * 表格中每一行有多少列是固定的
 	 */
-	private int                mFixedColumnCount;
-	/**
-	 * 垂直scroll offset
-	 */
-	private float              mVerticalScrollOffset;
-	/**
-	 * 水平scroll offset
-	 */
-	private float              mHorizontalScrollOffset;
-	/**
-	 * 用于保存所有item的位置信息
-	 */
-	private SparseArray<Rect>  mItemRectList;
-	/**
-	 * 用于保存所有item的状态(是否可见)
-	 */
-	private SparseBooleanArray mItemStateList;
+	private int         mFixedColumnCount;
 	/**
 	 * state
 	 */
-	private LayoutState        mLayoutState;
+	private LayoutState mLayoutState;
 
 	public TableLayoutManager(int columnCount) {
 		this(columnCount, 0, false);
@@ -56,8 +41,6 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		mColumnCount = columnCount;
 		mIsHasTableHeader = hasTableHeader;
 		mFixedColumnCount = fixedColumnCount;
-		mItemRectList = new SparseArray<>();
-		mItemStateList = new SparseBooleanArray();
 		mLayoutState = new LayoutState();
 	}
 
@@ -72,107 +55,218 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		if (getItemCount() <= 0 || state.isPreLayout()) {
 			return;
 		}
+		mLayoutState.mDisplayRect.set(0, 0, getHorizontalActiveWidth(), getVerticalActiveHeight());
 		// 先移除所有view
 		detachAndScrapAttachedViews(recycler);
-		mLayoutState.mContentRect.set(0, 0, getWidth(), getHeight());
-		calculateChildrenRect(recycler);
-		fill(recycler, state);
+		calculateSpreadSize(recycler);
+		fillChildren(recycler, state);
 	}
 
-	private void fill(RecyclerView.Recycler recycler, RecyclerView.State state) {
-		if (getItemCount() <= 0) {
+	private void fillChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+		if (getItemCount() <= 0 || state.isPreLayout()) {
 			return;
 		}
-		// 先移除所有view
-		detachAndScrapAttachedViews(recycler);
+		if (DEBUG) {
+			Log.d(TAG, "start fill children");
+		}
 		int rowCount = getItemCount() % mColumnCount == 0 ? getItemCount() / mColumnCount : getItemCount() / mColumnCount + 1;
-		for (int row = 0; row < rowCount; row++) {
-			for (int column = 0; column < mColumnCount; column++) {
+		Rect itemRect = new Rect();
+		int rowStart = getDisplayRowStart();
+		int rowEnd = getDisplayRowEnd();
+		int columnStart = getDisplayColumnStart();
+		int columnEnd = getDisplayColumnEnd();
+		int preRowHeight = getPreRowHeight(rowStart);
+		for (int row = rowStart; row <= rowEnd; row++) {
+			int preColumnWidth = getPreColumnWidth(columnStart);
+			for (int column = columnStart; column <= columnEnd; column++) {
 				int position = row * mColumnCount + column;
-				Rect itemRect = mItemRectList.get(position);
-				itemRect.offset(-mLayoutState.mOffsetX, -mLayoutState.mOffsetY);
-				if (Rect.intersects(itemRect, mLayoutState.mContentRect)) {
+				if (row == rowCount - 1 && position >= getItemCount()) {
+					break;
+				}
+				itemRect.set(preColumnWidth, preRowHeight, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column),
+							 preRowHeight + mLayoutState.mEachRowHeightList.get(row));
+				if (Rect.intersects(mLayoutState.mDisplayRect, itemRect)) {
 					View view = recycler.getViewForPosition(position);
 					addView(view);
 					measureChildWithMargins(view, 0, 0);
-					layoutDecoratedWithMargins(view, itemRect.left, itemRect.top, itemRect.right, itemRect.bottom);
+					layoutDecoratedWithMargins(view, itemRect.left - mLayoutState.mOffsetHorizontal,
+											   itemRect.top - mLayoutState.mOffsetVertical, itemRect.right - mLayoutState.mOffsetHorizontal,
+											   itemRect.bottom - mLayoutState.mOffsetVertical);
 				}
+				preColumnWidth += mLayoutState.mEachColumnWidthList.get(column);
 			}
+			preRowHeight += mLayoutState.mEachRowHeightList.get(row);
+		}
+		if (DEBUG) {
+			Log.d(TAG, "end fill children");
 		}
 	}
 
+	private int getPreRowHeight(int row) {
+		if (mLayoutState.mEachRowHeightList == null || mLayoutState.mEachRowHeightList.size() == 0) {
+			return 0;
+		}
+		int preRowHeight = 0;
+		for (int index = 0; index < row; index++) {
+			preRowHeight += mLayoutState.mEachRowHeightList.get(index);
+		}
+		return preRowHeight;
+	}
+
+	private int getPreColumnWidth(int column) {
+		if (mLayoutState.mEachColumnWidthList == null || mLayoutState.mEachColumnWidthList.size() == 0) {
+			return 0;
+		}
+		int preColumnWidth = 0;
+		for (int index = 0; index < column; index++) {
+			preColumnWidth += mLayoutState.mEachColumnWidthList.get(index);
+		}
+		return preColumnWidth;
+	}
+
+	private int getDisplayRowStart() {
+		int rowHeightPre = 0;
+		for (int row = 0; row < mLayoutState.mEachRowHeightList.size(); row++) {
+			int itemBottom = rowHeightPre + mLayoutState.mEachRowHeightList.get(row);
+			if (itemBottom > mLayoutState.mDisplayRect.top) {
+				return row;
+			}
+			rowHeightPre += mLayoutState.mEachRowHeightList.get(row);
+		}
+		return 0;
+	}
+
+	private int getDisplayRowEnd() {
+		int rowCount = getItemCount() % mColumnCount == 0 ? getItemCount() / mColumnCount : getItemCount() / mColumnCount + 1;
+		if (rowCount != mLayoutState.mEachRowHeightList.size()) {
+			throw new IllegalArgumentException("row count not match");
+		}
+		int rowHeightPre = 0;
+		for (int row = 0; row < mLayoutState.mEachRowHeightList.size(); row++) {
+			int itemTop = rowHeightPre;
+			if (itemTop >= mLayoutState.mDisplayRect.bottom) {
+				return row;
+			}
+			rowHeightPre += mLayoutState.mEachRowHeightList.get(row);
+		}
+		return mLayoutState.mEachRowHeightList.size() - 1;
+	}
+
+	private int getDisplayColumnStart() {
+		int columnPre = 0;
+		for (int column = 0; column < mLayoutState.mEachColumnWidthList.size(); column++) {
+			int itemRight = columnPre + mLayoutState.mEachColumnWidthList.get(column);
+			if (itemRight > mLayoutState.mDisplayRect.left) {
+				return column;
+			}
+			columnPre += mLayoutState.mEachColumnWidthList.get(column);
+		}
+		return 0;
+	}
+
+	private int getDisplayColumnEnd() {
+		int columnPre = 0;
+		for (int column = 0; column < mLayoutState.mEachColumnWidthList.size(); column++) {
+			int itemLeft = columnPre;
+			if (itemLeft >= mLayoutState.mDisplayRect.right) {
+				return column;
+			}
+			columnPre += mLayoutState.mEachColumnWidthList.get(column);
+		}
+		return mLayoutState.mEachColumnWidthList.size() - 1;
+	}
 
 	/**
-	 * 计算所有item的位置信息
+	 * 计算平铺出来的宽度和高度
 	 */
-	private void calculateChildrenRect(RecyclerView.Recycler recycler) {
+	private void calculateSpreadSize(RecyclerView.Recycler recycler) {
 		if (getItemCount() <= 0) {
 			return;
 		}
-		Rect rect = new Rect();
-		mLayoutState.mTotalHeight = 0;
-		mLayoutState.mTotalWidth = 0;
-		int rowCount = getItemCount() % mColumnCount == 0 ? getItemCount() / mColumnCount : getItemCount() / mColumnCount + 1;
-		int rowHeightPre = 0;
-		for (int row = 0; row < rowCount; row++) {
-			int columnWidthPre = 0;
-			int oneRowHeightMax = 0;
-			for (int column = 0; column < mColumnCount; column++) {
-				int position = row * mColumnCount + column;
-				View view = recycler.getViewForPosition(position);
-				measureChildWithMargins(view, 0, 0);
-				calculateItemDecorationsForChild(view, rect);
-				int width = getDecoratedMeasuredWidth(view);
-				int height = getDecoratedMeasuredHeight(view);
-				Rect itemRect = mItemRectList.get(position);
-				if (itemRect == null) {
-					itemRect = new Rect();
-				}
-				itemRect.set(columnWidthPre, rowHeightPre, columnWidthPre + width, rowHeightPre + height);
-				mItemRectList.put(position, itemRect);
-				columnWidthPre = columnWidthPre + width;
-				oneRowHeightMax = Math.max(height, oneRowHeightMax);
-			}
-			mLayoutState.mTotalWidth = Math.max(mLayoutState.mTotalWidth, columnWidthPre);
-			rowHeightPre = rowHeightPre + oneRowHeightMax;
+		if (DEBUG) {
+			Log.d(TAG, "start spread size");
 		}
-		mLayoutState.mTotalHeight = rowHeightPre;
+		mLayoutState.mSpreadHeight = 0;
+		mLayoutState.mSpreadWidth = 0;
+		int rowCount = getItemCount() % mColumnCount == 0 ? getItemCount() / mColumnCount : getItemCount() / mColumnCount + 1;
+		// 平铺高度
+		for (int row = 0; row < rowCount; row++) {
+			int position = row * mColumnCount;
+			View view = recycler.getViewForPosition(position);
+			measureChildWithMargins(view, 0, 0);
+			int height = getDecoratedMeasuredHeight(view);
+			mLayoutState.mSpreadHeight += height;
+			mLayoutState.mEachRowHeightList.put(row, height);
+		}
+		// 平铺宽度
+		if (rowCount > 1) {
+			for (int column = 0; column < mColumnCount; column++) {
+				View view = recycler.getViewForPosition(column);
+				measureChildWithMargins(view, 0, 0);
+				int width = getDecoratedMeasuredWidth(view);
+				mLayoutState.mSpreadWidth += width;
+				mLayoutState.mEachColumnWidthList.put(column, width);
+			}
+		} else {
+			for (int column = 0; column < getItemCount(); column++) {
+				View view = recycler.getViewForPosition(column);
+				measureChildWithMargins(view, 0, 0);
+				int width = getDecoratedMeasuredWidth(view);
+				mLayoutState.mSpreadWidth += width;
+				mLayoutState.mEachColumnWidthList.put(column, width);
+			}
+		}
+		if (DEBUG) {
+			Log.d(TAG, "end spread size");
+		}
 	}
 
 	@Override
 	public boolean canScrollHorizontally() {
-		return mLayoutState.mTotalWidth > getWidth();
+		return mLayoutState.mSpreadWidth > getHorizontalActiveWidth();
 	}
 
 	@Override
 	public int scrollHorizontallyBy(int dx, RecyclerView.Recycler recycler, RecyclerView.State state) {
-		if (mLayoutState.mOffsetX + dx > mLayoutState.mTotalWidth - getWidth()) {
-			dx = mLayoutState.mTotalWidth - getWidth() - mLayoutState.mOffsetX;
-		} else if (mLayoutState.mOffsetX + dx < 0) {
-			dx = -mLayoutState.mOffsetX;
+		// 先移除所有view
+		detachAndScrapAttachedViews(recycler);
+		if (mLayoutState.mOffsetHorizontal + dx > mLayoutState.mSpreadWidth - getHorizontalActiveWidth()) {
+			dx = mLayoutState.mSpreadWidth - getHorizontalActiveWidth() - mLayoutState.mOffsetHorizontal;
+		} else if (mLayoutState.mOffsetHorizontal + dx < 0) {
+			dx = -mLayoutState.mOffsetHorizontal;
 		}
-		Log.d("tuacy", "dx = " + dx);
-		mLayoutState.mOffsetX += dx;
-		Log.d("tuacy", "offset = " + mLayoutState.mOffsetX);
-		fill(recycler, state);
+		mLayoutState.mOffsetHorizontal += dx;
+		mLayoutState.mDisplayRect.offset(dx, 0);
+		fillChildren(recycler, state);
 		return dx;
 	}
 
 	@Override
 	public boolean canScrollVertically() {
-		return mLayoutState.mTotalHeight > getHeight();
+		return mLayoutState.mSpreadHeight > getVerticalActiveHeight();
 	}
 
 	@Override
 	public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
-		if (mLayoutState.mOffsetY + dy > mLayoutState.mTotalHeight - getHeight()) {
-			dy = mLayoutState.mTotalHeight - getHeight() - mLayoutState.mOffsetY;
-		} else if (mLayoutState.mOffsetY + dy < 0) {
-			dy = -mLayoutState.mOffsetY;
+		// 先移除所有view
+		detachAndScrapAttachedViews(recycler);
+		if (mLayoutState.mOffsetVertical + dy > mLayoutState.mSpreadHeight - getVerticalActiveHeight()) {
+			dy = mLayoutState.mSpreadHeight - getVerticalActiveHeight() - mLayoutState.mOffsetVertical;
+		} else if (mLayoutState.mOffsetVertical + dy < 0) {
+			dy = -mLayoutState.mOffsetVertical;
 		}
-		mLayoutState.mOffsetY += dy;
-		fill(recycler, state);
+		mLayoutState.mOffsetVertical += dy;
+		mLayoutState.mDisplayRect.offset(0, dy);
+		fillChildren(recycler, state);
 		return dy;
+	}
+
+	private int getHorizontalActiveWidth() {
+		return getWidth() - getPaddingLeft() - getPaddingRight();
+	}
+
+	private int getVerticalActiveHeight() {
+		return getHeight() - getPaddingTop() - getPaddingBottom();
 	}
 
 	/**
@@ -183,15 +277,45 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		/**
 		 * 整个平铺开来，总宽度
 		 */
-		int mTotalWidth;
+		int            mSpreadWidth;
 		/**
 		 * 整个平铺开来，总高度
 		 */
-		int mTotalHeight;
-		int mOffsetX;
-		int mOffsetY;
+		int            mSpreadHeight;
+		/**
+		 * 每一行的高度list
+		 */
+		SparseIntArray mEachRowHeightList;
+		/**
+		 * 每一列的宽度list
+		 */
+		SparseIntArray mEachColumnWidthList;
+		/**
+		 * 水平偏移
+		 */
+		int            mOffsetHorizontal;
+		/**
+		 * 垂直偏移
+		 */
+		int            mOffsetVertical;
+		/**
+		 * 显示的有效区域
+		 */
+		Rect           mDisplayRect;
 
-		final Rect mContentRect = new Rect();
+		LayoutState() {
+			reset();
+		}
+
+		void reset() {
+			mSpreadWidth = 0;
+			mSpreadHeight = 0;
+			mOffsetHorizontal = 0;
+			mOffsetVertical = 0;
+			mDisplayRect = new Rect();
+			mEachRowHeightList = new SparseIntArray();
+			mEachColumnWidthList = new SparseIntArray();
+		}
 	}
 
 
