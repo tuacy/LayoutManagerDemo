@@ -18,6 +18,8 @@ public class TableActivity extends AppCompatActivity {
 		context.startActivity(new Intent(context, TableActivity.class));
 	}
 
+	public static final int COLUMN_COUNT = 10;
+
 	private Context      mContext;
 	private RecyclerView mRecyclerView;
 
@@ -33,14 +35,14 @@ public class TableActivity extends AppCompatActivity {
 
 	private void initView() {
 		mRecyclerView = findViewById(R.id.recycler_table);
-		TableLayoutManager layoutManager = new TableLayoutManager.Build(mContext).setColumnCount(10)
+		TableLayoutManager layoutManager = new TableLayoutManager.Build(mContext).setColumnCount(COLUMN_COUNT)
 																				 .setFixColumnCount(1)
 																				 .setFixHeader(true)
 																				 .setTableHeadHeight(DensityUtils.dp2px(mContext, 32))
 																				 .setTableRowHeight(DensityUtils.dp2px(mContext, 48))
 																				 .build();
 		mRecyclerView.setLayoutManager(layoutManager);
-		mRecyclerView.addItemDecoration(new TableItemDecoration());
+		mRecyclerView.addItemDecoration(new TableItemDecoration(mContext));
 	}
 
 	private void initEvent() {
@@ -54,8 +56,21 @@ public class TableActivity extends AppCompatActivity {
 
 	private List<String> obtainDataList() {
 		List<String> dataList = new ArrayList<>();
-		for (int index = 0; index < 1000; index++) {
-			dataList.add(index + "");
+		for (int column = 0; column < COLUMN_COUNT; column++) {
+			if (column == 0) {
+				dataList.add("身高/体重");
+			} else {
+				dataList.add(String.valueOf(152 + (column - 1) * 4));
+			}
+		}
+		for (int row = 0; row < 60; row++) {
+			for (int column = 0; column < COLUMN_COUNT; column++) {
+				if (column == 0) {
+					dataList.add(String.valueOf(19 + row));
+				} else {
+					dataList.add(String.valueOf(50 + row + (column - 1) * 2));
+				}
+			}
 		}
 		return dataList;
 	}

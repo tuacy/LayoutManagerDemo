@@ -10,6 +10,8 @@ import android.view.ViewGroup;
 
 import com.tuacy.layoutmanagerdemo.utils.DensityUtils;
 
+import java.security.spec.PSSParameterSpec;
+
 /**
  * 实现一个table表格，既可以上下滑动又可以左右滑动
  * 根据item view是否在recycler范围之内做缓存处理
@@ -41,7 +43,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 	@Override
 	public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
 		super.onLayoutChildren(recycler, state);
-		if (getItemCount() <= 0 || state.isPreLayout()) {
+		if (getItemCount() <= 0 || state.isPreLayout() || mBuild.mColumnCount <= 0) {
 			return;
 		}
 		mLayoutState.reset();
@@ -380,6 +382,22 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 
 	private int getVerticalActiveHeight() {
 		return getHeight() - getPaddingTop() - getPaddingBottom();
+	}
+
+	public boolean isColumnStart(int position) {
+		return position % mLayoutState.mColumnCount == 0;
+	}
+
+	public boolean isColumnEnd(int position) {
+		return position % mLayoutState.mColumnCount == mLayoutState.mColumnCount - 1;
+	}
+
+	public boolean isRowStart(int position) {
+		return position < mLayoutState.mColumnCount;
+	}
+
+	public boolean isRowEnd(int position) {
+		return position >= (mLayoutState.mRowCount - 1) * mLayoutState.mColumnCount;
 	}
 
 	/**

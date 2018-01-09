@@ -30,6 +30,11 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.ItemViewHold
 	@Override
 	public void onBindViewHolder(ItemViewHolder holder, int position) {
 		holder.mTextItem.setText(mDataList.get(position));
+		if (position / TableActivity.COLUMN_COUNT % 2 == 0) {
+			holder.mTextItem.setBackgroundColor(mContext.getResources().getColor(R.color.colorEven));
+		} else {
+			holder.mTextItem.setBackgroundColor(mContext.getResources().getColor(R.color.colorOdd));
+		}
 	}
 
 	@Override
