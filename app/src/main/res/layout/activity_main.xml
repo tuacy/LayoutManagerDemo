@@ -10,14 +10,14 @@
         android:id="@+id/button_card_layout_manager"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="CardLayoutManager"
+        android:text="卡片"
         android:textAllCaps="false"/>
 
     <Button
         android:id="@+id/button_table_layout_manager"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TableLayoutManager"
+        android:text="表格"
         android:textAllCaps="false"/>
 
 </LinearLayout>

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 
 import com.tuacy.layoutmanagerdemo.R;
 import com.tuacy.layoutmanagerdemo.utils.DensityUtils;
@@ -52,6 +53,12 @@ public class TableActivity extends AppCompatActivity {
 	private void initData() {
 		TableAdapter adapter = new TableAdapter(mContext, obtainDataList());
 		mRecyclerView.setAdapter(adapter);
+		adapter.setOnItemClickListener(new TableAdapter.OnItemClickListener() {
+			@Override
+			public void onItemClick(int position) {
+				Log.d("tuacy", "position = " + position);
+			}
+		});
 	}
 
 	private List<String> obtainDataList() {

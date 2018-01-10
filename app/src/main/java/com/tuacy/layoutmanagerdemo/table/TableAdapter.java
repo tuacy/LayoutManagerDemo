@@ -14,12 +14,22 @@ import java.util.List;
 
 public class TableAdapter extends RecyclerView.Adapter<TableAdapter.ItemViewHolder> {
 
-	private Context      mContext;
-	private List<String> mDataList;
+	public interface OnItemClickListener {
+
+		void onItemClick(int position);
+	}
+
+	private Context             mContext;
+	private List<String>        mDataList;
+	private OnItemClickListener mListener;
 
 	public TableAdapter(Context context, List<String> dataList) {
 		mContext = context;
 		mDataList = dataList;
+	}
+
+	public void setOnItemClickListener(OnItemClickListener listener) {
+		mListener = listener;
 	}
 
 	@Override
@@ -28,13 +38,22 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.ItemViewHold
 	}
 
 	@Override
-	public void onBindViewHolder(ItemViewHolder holder, int position) {
+	public void onBindViewHolder(final ItemViewHolder holder, int position) {
 		holder.mTextItem.setText(mDataList.get(position));
 		if (position / TableActivity.COLUMN_COUNT % 2 == 0) {
 			holder.mTextItem.setBackgroundColor(mContext.getResources().getColor(R.color.colorEven));
 		} else {
 			holder.mTextItem.setBackgroundColor(mContext.getResources().getColor(R.color.colorOdd));
 		}
+		holder.mTextItem.setTag(position);
+		holder.mTextItem.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (mListener != null) {
+					mListener.onItemClick((Integer) holder.mTextItem.getTag());
+				}
+			}
+		});
 	}
 
 	@Override

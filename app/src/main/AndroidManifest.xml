@@ -19,11 +19,11 @@
 
         <activity
             android:name=".card.CardActivity"
-            android:label="CardLayoutManager" />
+            android:label="卡片" />
 
         <activity
             android:name=".table.TableActivity"
-            android:label="TableLayoutManager" />
+            android:label="表格" />
     </application>
 
 </manifest>
