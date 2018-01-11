@@ -5,11 +5,17 @@ import android.view.View;
 import android.view.ViewGroup;
 
 /**
- * 重叠LayoutManager
+ * 卡片式布局(卡片重叠)
  */
 public class CardLayoutManager extends RecyclerView.LayoutManager {
 
+	/**
+	 * 每个卡片相对于上一个卡片的缩放大小
+	 */
 	private float mSectionScale;
+	/**
+	 * 每个卡片
+	 */
 	private float mSectionTranslation;
 	private int   mShowViewMax;
 
@@ -36,7 +42,7 @@ public class CardLayoutManager extends RecyclerView.LayoutManager {
 		}
 		// 先移除所有view
 		detachAndScrapAttachedViews(recycler);
-		// 防止view过多产生oom情况，这里我们做了view最大个数的限制，他没办法想别的LayoutManager那样通过item是否落在屏幕内判断是否回收
+		// 防止view过多产生oom情况，这里我们做了view最大个数的限制，因为没办法像别的LayoutManager那样通过item是否落在屏幕内判断是否回收
 		int viewCount = getItemCount();
 		if (getItemCount() > mShowViewMax) {
 			viewCount = mShowViewMax;
@@ -50,7 +56,7 @@ public class CardLayoutManager extends RecyclerView.LayoutManager {
 			measureChildWithMargins(view, 0, 0);
 			// view在RecyclerView里面还剩余的宽度
 			int widthSpace = getWidth() - getDecoratedMeasuredWidth(view);
-			// layout view,水平居中
+			// layout view,水平居中，靠上
 			layoutDecoratedWithMargins(view, widthSpace / 2, 0, widthSpace / 2 + getDecoratedMeasuredWidth(view),
 									   getDecoratedMeasuredHeight(view));
 			// 为了让重叠在一起的view，有一个更好的显示效果

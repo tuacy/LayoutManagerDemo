@@ -8,6 +8,7 @@ import android.view.View;
 import com.tuacy.layoutmanagerdemo.card.CardActivity;
 import com.tuacy.layoutmanagerdemo.table.TableActivity;
 
+
 public class MainActivity extends AppCompatActivity {
 
 	private Context mContext;
@@ -30,5 +31,6 @@ public class MainActivity extends AppCompatActivity {
 				TableActivity.startUp(mContext);
 			}
 		});
+
 	}
 }

@@ -39,8 +39,8 @@ public class TableActivity extends AppCompatActivity {
 		TableLayoutManager layoutManager = new TableLayoutManager.Build(mContext).setColumnCount(COLUMN_COUNT)
 																				 .setFixColumnCount(1)
 																				 .setFixHeader(true)
-																				 .setTableHeadHeight(DensityUtils.dp2px(mContext, 32))
-																				 .setTableRowHeight(DensityUtils.dp2px(mContext, 48))
+																				 .setHeadHeight(DensityUtils.dp2px(mContext, 32))
+																				 .setRowHeight(DensityUtils.dp2px(mContext, 48))
 																				 .build();
 		mRecyclerView.setLayoutManager(layoutManager);
 		mRecyclerView.addItemDecoration(new TableItemDecoration(mContext));

@@ -10,11 +10,8 @@ import android.view.ViewGroup;
 
 import com.tuacy.layoutmanagerdemo.utils.DensityUtils;
 
-import java.security.spec.PSSParameterSpec;
-
 /**
- * 实现一个table表格，既可以上下滑动又可以左右滑动
- * 根据item view是否在recycler范围之内做缓存处理
+ * 实现表格布局
  */
 public class TableLayoutManager extends RecyclerView.LayoutManager {
 
@@ -48,9 +45,10 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		}
 		mLayoutState.reset();
 		mLayoutState.mColumnCount = mBuild.mColumnCount;
+		//确定总共有多少行
 		mLayoutState.mRowCount = getItemCount() % mBuild.mColumnCount == 0 ? getItemCount() / mBuild.mColumnCount :
 								 getItemCount() / mBuild.mColumnCount + 1;
-		//确定可滑动的区域
+		//内容显示区域(可滑动的区域)
 		mLayoutState.mSlideAreaRect.set(0, 0, getHorizontalActiveWidth(), getVerticalActiveHeight());
 		// 先移除所有view
 		detachAndScrapAttachedViews(recycler);
@@ -79,15 +77,15 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 				if (row == mLayoutState.mRowCount - 1 && position >= getItemCount()) {
 					break;
 				}
-				if (mBuild.mIsFixHeader && row == 0) {
+				if (mBuild.mFixHeader && row == 0) {
 					itemRect.set(preColumnWidth, preRowHeight, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column),
-								 preRowHeight + mBuild.mTableHeadHeight);
+								 preRowHeight + mBuild.mHeadHeight);
 				} else {
 					itemRect.set(preColumnWidth, preRowHeight, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column),
-								 preRowHeight + mBuild.mTableRowHeight);
+								 preRowHeight + mBuild.mRowHeight);
 				}
 
-				if (mBuild.mIsFixHeader && row == 0) {
+				if (mBuild.mFixHeader && row == 0) {
 					skip = true;
 				}
 				if (column < mBuild.mFixColumnCount) {
@@ -97,10 +95,10 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 					View view = recycler.getViewForPosition(position);
 					addView(view);
 					final RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) view.getLayoutParams();
-					if (mBuild.mIsFixHeader) {
-						layoutParams.height = row == 0 ? mBuild.mTableHeadHeight : mBuild.mTableRowHeight;
+					if (mBuild.mFixHeader) {
+						layoutParams.height = row == 0 ? mBuild.mHeadHeight : mBuild.mRowHeight;
 					} else {
-						layoutParams.height = mBuild.mTableRowHeight;
+						layoutParams.height = mBuild.mRowHeight;
 					}
 					measureChildWithMargins(view, 0, 0);
 					layoutDecoratedWithMargins(view, itemRect.left - mLayoutState.mOffsetHorizontal,
@@ -109,10 +107,10 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 				}
 				preColumnWidth += mLayoutState.mEachColumnWidthList.get(column);
 			}
-			if (mBuild.mIsFixHeader && row == 0) {
-				preRowHeight += mBuild.mTableHeadHeight;
+			if (mBuild.mFixHeader && row == 0) {
+				preRowHeight += mBuild.mHeadHeight;
 			} else {
-				preRowHeight += mBuild.mTableRowHeight;
+				preRowHeight += mBuild.mRowHeight;
 			}
 		}
 		/**
@@ -128,24 +126,24 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 					if (row == mLayoutState.mRowCount - 1 && position >= getItemCount()) {
 						break;
 					}
-					if (mBuild.mIsFixHeader && row == 0) {
+					if (mBuild.mFixHeader && row == 0) {
 						itemRect.set(preColumnWidth, preRowHeight, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column),
-									 preRowHeight + mBuild.mTableHeadHeight);
+									 preRowHeight + mBuild.mHeadHeight);
 					} else {
 						itemRect.set(preColumnWidth, preRowHeight, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column),
-									 preRowHeight + mBuild.mTableRowHeight);
+									 preRowHeight + mBuild.mRowHeight);
 					}
-					if (mBuild.mIsFixHeader && row == 0) {
+					if (mBuild.mFixHeader && row == 0) {
 						skip = true;
 					}
 					if (!skip) {
 						View view = recycler.getViewForPosition(position);
 						addView(view);
 						final RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) view.getLayoutParams();
-						if (mBuild.mIsFixHeader) {
-							layoutParams.height = row == 0 ? mBuild.mTableHeadHeight : mBuild.mTableRowHeight;
+						if (mBuild.mFixHeader) {
+							layoutParams.height = row == 0 ? mBuild.mHeadHeight : mBuild.mRowHeight;
 						} else {
-							layoutParams.height = mBuild.mTableRowHeight;
+							layoutParams.height = mBuild.mRowHeight;
 						}
 						measureChildWithMargins(view, 0, 0);
 						layoutDecoratedWithMargins(view, itemRect.left, itemRect.top - mLayoutState.mOffsetVertical, itemRect.right,
@@ -153,24 +151,24 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 					}
 					preColumnWidth += mLayoutState.mEachColumnWidthList.get(column);
 				}
-				if (mBuild.mIsFixHeader && row == 0) {
-					preRowHeight += mBuild.mTableHeadHeight;
+				if (mBuild.mFixHeader && row == 0) {
+					preRowHeight += mBuild.mHeadHeight;
 				} else {
-					preRowHeight += mBuild.mTableRowHeight;
+					preRowHeight += mBuild.mRowHeight;
 				}
 			}
 		}
 		/**
 		 * 处理行固定，有固定的时候也是固定第一行
 		 */
-		if (mBuild.mIsFixHeader) {
+		if (mBuild.mFixHeader) {
 			int preColumnWidth = getPreColumnWidth(columnStart);
 			for (int column = columnStart; column <= columnEnd; column++) {
 				boolean skip = false;
 				if (column >= getItemCount()) {
 					break;
 				}
-				itemRect.set(preColumnWidth, 0, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column), mBuild.mTableHeadHeight);
+				itemRect.set(preColumnWidth, 0, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column), mBuild.mHeadHeight);
 				if (column < mBuild.mFixColumnCount) {
 					skip = true;
 				}
@@ -178,7 +176,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 					View view = recycler.getViewForPosition(column);
 					addView(view);
 					final RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) view.getLayoutParams();
-					layoutParams.height = mBuild.mTableHeadHeight;
+					layoutParams.height = mBuild.mHeadHeight;
 					measureChildWithMargins(view, 0, 0);
 					layoutDecoratedWithMargins(view, itemRect.left - mLayoutState.mOffsetHorizontal, itemRect.top,
 											   itemRect.right - mLayoutState.mOffsetHorizontal, itemRect.bottom);
@@ -188,19 +186,19 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		}
 
 		/**
-		 * 处理两个相交的部分
+		 * 处理固定行固定列相交的部分
 		 */
-		if (mBuild.mIsFixHeader && mBuild.mFixColumnCount > 0) {
+		if (mBuild.mFixHeader && mBuild.mFixColumnCount > 0) {
 			int preColumnWidth = 0;
 			for (int column = 0; column < mBuild.mFixColumnCount; column++) {
 				if (column >= getItemCount()) {
 					break;
 				}
-				itemRect.set(preColumnWidth, 0, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column), mBuild.mTableHeadHeight);
+				itemRect.set(preColumnWidth, 0, preColumnWidth + mLayoutState.mEachColumnWidthList.get(column), mBuild.mHeadHeight);
 				View view = recycler.getViewForPosition(column);
 				addView(view);
 				final RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) view.getLayoutParams();
-				layoutParams.height = mBuild.mTableHeadHeight;
+				layoutParams.height = mBuild.mHeadHeight;
 				measureChildWithMargins(view, 0, 0);
 				layoutDecoratedWithMargins(view, itemRect.left, itemRect.top, itemRect.right, itemRect.bottom);
 				preColumnWidth += mLayoutState.mEachColumnWidthList.get(column);
@@ -212,18 +210,24 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		}
 	}
 
+	/**
+	 * 获取指定行前面的高度
+	 */
 	private int getPreRowHeight(int row) {
 		int preRowHeight = 0;
 		for (int index = 0; index < row; index++) {
-			if (mBuild.mIsFixHeader && index == 0) {
-				preRowHeight += mBuild.mTableHeadHeight;
+			if (mBuild.mFixHeader && index == 0) {
+				preRowHeight += mBuild.mHeadHeight;
 			} else {
-				preRowHeight += mBuild.mTableRowHeight;
+				preRowHeight += mBuild.mRowHeight;
 			}
 		}
 		return preRowHeight;
 	}
 
+	/**
+	 * 获取指定列前面的宽度
+	 */
 	private int getPreColumnWidth(int column) {
 		if (mLayoutState.mEachColumnWidthList == null || mLayoutState.mEachColumnWidthList.size() == 0) {
 			return 0;
@@ -235,27 +239,33 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		return preColumnWidth;
 	}
 
+	/**
+	 * 获取要显示行开始的位置
+	 */
 	private int getDisplayRowStart() {
 		int rowHeightPre = 0;
 		for (int row = 0; row < mLayoutState.mRowCount; row++) {
 			int itemBottom;
-			if (mBuild.mIsFixHeader && row == 0) {
-				itemBottom = rowHeightPre + mBuild.mTableHeadHeight;
+			if (mBuild.mFixHeader && row == 0) {
+				itemBottom = rowHeightPre + mBuild.mHeadHeight;
 			} else {
-				itemBottom = rowHeightPre + mBuild.mTableRowHeight;
+				itemBottom = rowHeightPre + mBuild.mRowHeight;
 			}
 			if (itemBottom > mLayoutState.mSlideAreaRect.top) {
 				return row;
 			}
-			if (mBuild.mIsFixHeader && row == 0) {
-				rowHeightPre += mBuild.mTableHeadHeight;
+			if (mBuild.mFixHeader && row == 0) {
+				rowHeightPre += mBuild.mHeadHeight;
 			} else {
-				rowHeightPre += mBuild.mTableRowHeight;
+				rowHeightPre += mBuild.mRowHeight;
 			}
 		}
 		return 0;
 	}
 
+	/**
+	 * 获取要显示行结束的位置
+	 */
 	private int getDisplayRowEnd() {
 		int rowHeightPre = 0;
 		for (int row = 0; row < mLayoutState.mRowCount; row++) {
@@ -263,16 +273,19 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 			if (itemTop >= mLayoutState.mSlideAreaRect.bottom) {
 				return row;
 			}
-			if (mBuild.mIsFixHeader && row == 0) {
-				rowHeightPre += mBuild.mTableHeadHeight;
+			if (mBuild.mFixHeader && row == 0) {
+				rowHeightPre += mBuild.mHeadHeight;
 			} else {
-				rowHeightPre += mBuild.mTableRowHeight;
+				rowHeightPre += mBuild.mRowHeight;
 			}
 		}
 
 		return mLayoutState.mRowCount - 1;
 	}
 
+	/**
+	 * 获取显示列开始的位置
+	 */
 	private int getDisplayColumnStart() {
 		int columnPre = 0;
 		for (int column = 0; column < mLayoutState.mEachColumnWidthList.size(); column++) {
@@ -285,6 +298,9 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		return 0;
 	}
 
+	/**
+	 * 获取显示列结束的位置
+	 */
 	private int getDisplayColumnEnd() {
 		int columnPre = 0;
 		for (int column = 0; column < mLayoutState.mEachColumnWidthList.size(); column++) {
@@ -307,13 +323,13 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		mLayoutState.mSpreadHeight = 0;
 		mLayoutState.mSpreadWidth = 0;
 		// 平铺高度
-		if (mBuild.mIsFixHeader) {
-			mLayoutState.mSpreadHeight = mBuild.mTableHeadHeight;
+		if (mBuild.mFixHeader) {
+			mLayoutState.mSpreadHeight = mBuild.mHeadHeight;
 			if (mLayoutState.mRowCount > 1) {
-				mLayoutState.mSpreadHeight += (mLayoutState.mRowCount - 1) * mBuild.mTableRowHeight;
+				mLayoutState.mSpreadHeight += (mLayoutState.mRowCount - 1) * mBuild.mRowHeight;
 			}
 		} else {
-			mLayoutState.mSpreadHeight = mLayoutState.mRowCount * mBuild.mTableRowHeight;
+			mLayoutState.mSpreadHeight = mLayoutState.mRowCount * mBuild.mRowHeight;
 		}
 
 		// 平铺宽度
@@ -336,6 +352,9 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		}
 	}
 
+	/**
+	 * 平铺宽度大于内容宽度，水平可以滑动
+	 */
 	@Override
 	public boolean canScrollHorizontally() {
 		return mLayoutState.mSpreadWidth > getHorizontalActiveWidth();
@@ -356,6 +375,9 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		return dx;
 	}
 
+	/**
+	 * 平铺的高度大于内容区域的高度，垂直可以滑动
+	 */
 	@Override
 	public boolean canScrollVertically() {
 		return mLayoutState.mSpreadHeight > getVerticalActiveHeight();
@@ -422,19 +444,19 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		 */
 		int            mSpreadHeight;
 		/**
-		 * 每一列的宽度list
+		 * 每一列对应的宽度list
 		 */
 		SparseIntArray mEachColumnWidthList;
 		/**
-		 * 水平偏移
+		 * 水平偏移量
 		 */
 		int            mOffsetHorizontal;
 		/**
-		 * 垂直偏移
+		 * 垂直偏移量
 		 */
 		int            mOffsetVertical;
 		/**
-		 * 可滑动的区域
+		 * 内容区域(可滑动的区域),绘制的时候只绘制内容区域内的item
 		 */
 		Rect           mSlideAreaRect;
 
@@ -462,15 +484,15 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		/**
 		 * 是否固定表头
 		 */
-		boolean mIsFixHeader;
+		boolean mFixHeader;
 		/**
 		 * 表头行高度
 		 */
-		int     mTableHeadHeight;
+		int     mHeadHeight;
 		/**
 		 * 表每一行的高度
 		 */
-		int     mTableRowHeight;
+		int     mRowHeight;
 		/**
 		 * 每一行的前多少列固定不动
 		 */
@@ -478,9 +500,9 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 
 		Build(Context context) {
 			mColumnCount = 1;
-			mIsFixHeader = false;
-			mTableHeadHeight = DensityUtils.dp2px(context, 48);
-			mTableRowHeight = DensityUtils.dp2px(context, 48);
+			mFixHeader = false;
+			mHeadHeight = DensityUtils.dp2px(context, 48);
+			mRowHeight = DensityUtils.dp2px(context, 48);
 			mFixColumnCount = 0;
 		}
 
@@ -490,17 +512,17 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		}
 
 		public Build setFixHeader(boolean fixed) {
-			mIsFixHeader = fixed;
+			mFixHeader = fixed;
 			return this;
 		}
 
-		public Build setTableHeadHeight(int height) {
-			mTableHeadHeight = height;
+		public Build setHeadHeight(int height) {
+			mHeadHeight = height;
 			return this;
 		}
 
-		public Build setTableRowHeight(int height) {
-			mTableRowHeight = height;
+		public Build setRowHeight(int height) {
+			mRowHeight = height;
 			return this;
 		}
 
