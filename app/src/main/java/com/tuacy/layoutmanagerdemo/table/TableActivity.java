@@ -41,6 +41,7 @@ public class TableActivity extends AppCompatActivity {
 																				 .setFixHeader(true)
 																				 .setHeadHeight(DensityUtils.dp2px(mContext, 32))
 																				 .setRowHeight(DensityUtils.dp2px(mContext, 48))
+																				 .setWidgetCount(3)
 																				 .build();
 		mRecyclerView.setLayoutManager(layoutManager);
 		mRecyclerView.addItemDecoration(new TableItemDecoration(mContext));
@@ -67,13 +68,13 @@ public class TableActivity extends AppCompatActivity {
 			if (column == 0) {
 				dataList.add("身高/体重");
 			} else {
-				dataList.add(String.valueOf(152 + (column - 1) * 4));
+				dataList.add(String.valueOf(152 + (column - 1) * 4) + "cm");
 			}
 		}
 		for (int row = 0; row < 60; row++) {
 			for (int column = 0; column < COLUMN_COUNT; column++) {
 				if (column == 0) {
-					dataList.add(String.valueOf(19 + row));
+					dataList.add(String.valueOf(19 + row) + "岁");
 				} else {
 					dataList.add(String.valueOf(50 + row + (column - 1) * 2));
 				}

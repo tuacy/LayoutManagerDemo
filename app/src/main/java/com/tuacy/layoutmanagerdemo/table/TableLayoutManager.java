@@ -3,6 +3,7 @@ package com.tuacy.layoutmanagerdemo.table;
 import android.content.Context;
 import android.graphics.Rect;
 import android.support.v7.widget.RecyclerView;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.View;
@@ -34,7 +35,26 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 
 	@Override
 	public RecyclerView.LayoutParams generateDefaultLayoutParams() {
-		return new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+		return new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+	}
+
+	@Override
+	public RecyclerView.LayoutParams generateLayoutParams(Context c, AttributeSet attrs) {
+		return new LayoutParams(c, attrs);
+	}
+
+	@Override
+	public RecyclerView.LayoutParams generateLayoutParams(ViewGroup.LayoutParams lp) {
+		if (lp instanceof ViewGroup.MarginLayoutParams) {
+			return new LayoutParams((ViewGroup.MarginLayoutParams) lp);
+		} else {
+			return new LayoutParams(lp);
+		}
+	}
+
+	@Override
+	public boolean checkLayoutParams(RecyclerView.LayoutParams lp) {
+		return lp instanceof LayoutParams;
 	}
 
 	@Override
@@ -100,6 +120,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 					} else {
 						layoutParams.height = mBuild.mRowHeight;
 					}
+					layoutParams.width = mLayoutState.mEachColumnWidthList.get(column);
 					measureChildWithMargins(view, 0, 0);
 					layoutDecoratedWithMargins(view, itemRect.left - mLayoutState.mOffsetHorizontal,
 											   itemRect.top - mLayoutState.mOffsetVertical, itemRect.right - mLayoutState.mOffsetHorizontal,
@@ -145,6 +166,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 						} else {
 							layoutParams.height = mBuild.mRowHeight;
 						}
+						layoutParams.width = mLayoutState.mEachColumnWidthList.get(column);
 						measureChildWithMargins(view, 0, 0);
 						layoutDecoratedWithMargins(view, itemRect.left, itemRect.top - mLayoutState.mOffsetVertical, itemRect.right,
 												   itemRect.bottom - mLayoutState.mOffsetVertical);
@@ -177,6 +199,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 					addView(view);
 					final RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) view.getLayoutParams();
 					layoutParams.height = mBuild.mHeadHeight;
+					layoutParams.width = mLayoutState.mEachColumnWidthList.get(column);
 					measureChildWithMargins(view, 0, 0);
 					layoutDecoratedWithMargins(view, itemRect.left - mLayoutState.mOffsetHorizontal, itemRect.top,
 											   itemRect.right - mLayoutState.mOffsetHorizontal, itemRect.bottom);
@@ -199,6 +222,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 				addView(view);
 				final RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) view.getLayoutParams();
 				layoutParams.height = mBuild.mHeadHeight;
+				layoutParams.width = mLayoutState.mEachColumnWidthList.get(column);
 				measureChildWithMargins(view, 0, 0);
 				layoutDecoratedWithMargins(view, itemRect.left, itemRect.top, itemRect.right, itemRect.bottom);
 				preColumnWidth += mLayoutState.mEachColumnWidthList.get(column);
@@ -332,25 +356,72 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 			mLayoutState.mSpreadHeight = mLayoutState.mRowCount * mBuild.mRowHeight;
 		}
 
+		if (mBuild.mFixColumnCount <= 0) {
+			mBuild.mFixColumnCount = 0;
+		}
+		if (mBuild.mFixColumnCount > mBuild.mColumnCount) {
+			mBuild.mFixColumnCount = mBuild.mColumnCount;
+		}
+		if (mBuild.mWidgetCount <= 0) {
+			mBuild.mWidgetCount = 0;
+		}
 		// 平铺宽度
 		if (mLayoutState.mRowCount > 1) {
-			for (int column = 0; column < mBuild.mColumnCount; column++) {
+			for (int column = 0; column < mBuild.mFixColumnCount; column++) {
 				View view = recycler.getViewForPosition(column);
 				measureChildWithMargins(view, 0, 0);
 				int width = getDecoratedMeasuredWidth(view);
 				mLayoutState.mSpreadWidth += width;
 				mLayoutState.mEachColumnWidthList.put(column, width);
+			}
+			if (mBuild.mWidgetCount == 0 || mBuild.mWidgetCount < (mBuild.mColumnCount - mBuild.mFixColumnCount)) {
+				for (int column = mBuild.mFixColumnCount; column < mBuild.mColumnCount; column++) {
+					View view = recycler.getViewForPosition(column);
+					measureChildWithMargins(view, 0, 0);
+					int width = getDecoratedMeasuredWidth(view);
+					mLayoutState.mSpreadWidth += width;
+					mLayoutState.mEachColumnWidthList.put(column, width);
+				}
+			} else {
+				int widgetCount = Math.min(mBuild.mColumnCount - mBuild.mFixColumnCount, mBuild.mWidgetCount);
+				if (widgetCount > 0) {
+					float eachWidgetWidth = (getHorizontalActiveWidth() - mLayoutState.mSpreadWidth) * 1.0f / widgetCount;
+					for (int column = mBuild.mFixColumnCount; column < mBuild.mColumnCount; column++) {
+						mLayoutState.mSpreadWidth += eachWidgetWidth;
+						mLayoutState.mEachColumnWidthList.put(column, (int) eachWidgetWidth);
+					}
+				}
 			}
 		} else {
-			for (int column = 0; column < getItemCount(); column++) {
+			for (int column = 0; column < mBuild.mFixColumnCount && column < getItemCount(); column++) {
 				View view = recycler.getViewForPosition(column);
 				measureChildWithMargins(view, 0, 0);
 				int width = getDecoratedMeasuredWidth(view);
 				mLayoutState.mSpreadWidth += width;
 				mLayoutState.mEachColumnWidthList.put(column, width);
 			}
+			if (mBuild.mWidgetCount == 0 || mBuild.mWidgetCount < (getItemCount() - mBuild.mFixColumnCount)) {
+				for (int column = mBuild.mFixColumnCount; column < getItemCount(); column++) {
+					View view = recycler.getViewForPosition(column);
+					measureChildWithMargins(view, 0, 0);
+					int width = getDecoratedMeasuredWidth(view);
+					mLayoutState.mSpreadWidth += width;
+					mLayoutState.mEachColumnWidthList.put(column, width);
+				}
+			} else {
+				int widgetCount = Math.min(getItemCount() - mBuild.mFixColumnCount, mBuild.mWidgetCount);
+				if (widgetCount > 0) {
+					float eachWidgetWidth = (getHorizontalActiveWidth() - mLayoutState.mSpreadWidth) * 1.0f / widgetCount;
+					for (int column = mBuild.mFixColumnCount; column < getItemCount(); column++) {
+						mLayoutState.mSpreadWidth += eachWidgetWidth;
+						mLayoutState.mEachColumnWidthList.put(column, (int) eachWidgetWidth);
+					}
+				}
+			}
+
 		}
 	}
+
 
 	/**
 	 * 平铺宽度大于内容宽度，水平可以滑动
@@ -497,6 +568,10 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 		 * 每一行的前多少列固定不动
 		 */
 		int     mFixColumnCount;
+		/**
+		 * 当非固定的列小于这个时候，自动平分屏幕(类似于LinearLayout widget效果)
+		 */
+		int     mWidgetCount;
 
 		Build(Context context) {
 			mColumnCount = 1;
@@ -504,6 +579,7 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 			mHeadHeight = DensityUtils.dp2px(context, 48);
 			mRowHeight = DensityUtils.dp2px(context, 48);
 			mFixColumnCount = 0;
+			mWidgetCount = 0;
 		}
 
 		public Build setColumnCount(int columnCount) {
@@ -531,10 +607,38 @@ public class TableLayoutManager extends RecyclerView.LayoutManager {
 			return this;
 		}
 
+		public Build setWidgetCount(int widgetCount) {
+			mWidgetCount = widgetCount;
+			return this;
+		}
+
 		TableLayoutManager build() {
 			return new TableLayoutManager(this);
 		}
 
+	}
+
+	public static class LayoutParams extends RecyclerView.LayoutParams {
+
+		public LayoutParams(Context c, AttributeSet attrs) {
+			super(c, attrs);
+		}
+
+		public LayoutParams(int width, int height) {
+			super(width, height);
+		}
+
+		public LayoutParams(ViewGroup.MarginLayoutParams source) {
+			super(source);
+		}
+
+		public LayoutParams(ViewGroup.LayoutParams source) {
+			super(source);
+		}
+
+		public LayoutParams(RecyclerView.LayoutParams source) {
+			super(source);
+		}
 	}
 
 
